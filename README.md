@@ -1,4 +1,5 @@
 # forex_new
+![stack Overflow](http://lmsotfy.com/so.png)
 <h2> Ukládání stavu programu </h2> 
 
 program bude využívat soubor k zapisování různých příkazů aby po jeho ukončnení je mohl zase přečíst a vrátit se do původního stavu
