@@ -5,5 +5,4 @@ program bude využívat soubor k zapisování různých příkazů aby po jeho u
 v souboru budou na jednotlivých řádcích jména měn podle a k nim vypsané příslušné požadavky
 
 <h2> Algoritmus </h2>
-![plot](https://user-images.githubusercontent.com/45818202/146441193-354efae9-d4fe-4050-9931-d8686217d95c.png)
-
+![Screenshot](https://user-images.githubusercontent.com/45818202/146441193-354efae9-d4fe-4050-9931-d8686217d95c.png)
