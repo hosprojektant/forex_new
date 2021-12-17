@@ -18,7 +18,7 @@ zelený stav pokud se nevyhodnotí stav jako buy nebo sell
 ## GUI
 GUI bude zobrazovat grafy jednotlivých měn a bude se mezi něma dát přepínát a bude ukazovat aktualní stav
 
-hodnoty které se budou moct v GUI měnit jsou délka aktualního stavu, jaké měny chceme obchodovat a jaký je aktualně stav
+hodnoty které se budou moct v GUI měnit jsou délka aktualního stavu, jaké měny chceme obchodovat a jaký je aktualně stav, a jaká hodnota násobku bude znamenat koupení měny 
 
 ## Testovaní
 v GUI bude možnost otestovat zisk z nějaké nastavené časové délky s tím že musíme zadat počáteční stav a délka stavu
