@@ -7,4 +7,9 @@ v souboru budou na jednotlivých řádcích jména měn podle a k nim vypsané p
 
 ## Algoritmus
 ![Screenshot](https://user-images.githubusercontent.com/45818202/146441193-354efae9-d4fe-4050-9931-d8686217d95c.png)
+![image](https://user-images.githubusercontent.com/45818202/146603754-9712a9a8-bb94-436c-839f-c9618ed27a25.png)
+![image](https://user-images.githubusercontent.com/45818202/146604759-d2930be3-99fe-4be8-a5be-e68cc08c5656.png)
+modrý stav na konci stavu se dá buy a přepne se do červeného
+zelený stav pokud se nevyhodnotí stav jako buy nebo sell
+červená stav na konci stavu se dá sell a přepne se do modrého 
 
