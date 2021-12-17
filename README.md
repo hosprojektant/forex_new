@@ -21,7 +21,7 @@ GUI bude zobrazovat grafy jednotlivých měn a bude se mezi něma dát přepín�
 hodnoty které se budou moct v GUI měnit jsou délka aktualního stavu, jaké měny chceme obchodovat a jaký je aktualně stav
 
 ## Testovaní
-v GUI bude možnost otestovat zisk z nějaké nastavené časové délka s tím že musíme zadat počáteční stav a délka stavu
+v GUI bude možnost otestovat zisk z nějaké nastavené časové délky s tím že musíme zadat počáteční stav a délka stavu
 
 
 
