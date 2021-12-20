@@ -12,6 +12,26 @@ def carka(data):
             return 1 
     return 0 
 
+def load_info_bot(input):
+    with open("info_bot.txt") as file:
+        while (line := file.readline().rstrip()):
+            case,data = line.split('=', 1)
+            if case == input:
+                return data
+
+def rewrite_info_bot(input,rewrite):
+    with open("info_bot.txt", "r+") as f:
+        d = f.readlines()
+        f.seek(0)
+        x=0
+        for i in d:
+            case,data = i.split('=', 1)
+            if case != input:
+                f.write(i)
+            else:
+                f.write(input+"="+rewrite+'\n')
+        f.truncate()
+
 
 def load_setings(input):
     with open("setings.txt") as file:

@@ -29,41 +29,45 @@ ticker_names_settings=[]
 profit_cnt = 0
 minus_cnt =0
 toolbar=0
-print("MetaTrader5 package author: ",mt5.__author__)
-print("MetaTrader5 package version: ",mt5.__version__)
- 
-pd.set_option('display.max_columns', None)  # or 1000
-pd.set_option('display.max_rows', None)  # or 1000
-pd.set_option('display.max_colwidth', None)  # or 199
-
- 
+ticker_names = 0
+top =0
 
 
 
 
-# establish connection to MetaTrader 5 terminal
-if not mt5.initialize():
-    print("initialize() failed, error code =",mt5.last_error())
-    quit()
+def lib_main():
+    print("MetaTrader5 package author: ",mt5.__author__)
+    print("MetaTrader5 package version: ",mt5.__version__)
+    
+    pd.set_option('display.max_columns', None)  # or 1000
+    pd.set_option('display.max_rows', None)  # or 1000
+    pd.set_option('display.max_colwidth', None)  # or 199
 
+    # establish connection to MetaTrader 5 terminal
+    if not mt5.initialize():
+        print("initialize() failed, error code =",mt5.last_error())
+        quit()
 
+    # acount and server information    
+    global login
+    login=fileworker.load_setings("login")
+    global password
+    password=fileworker.load_setings("password")
+    global server
+    server=fileworker.load_setings("server")
+    global ticker_names
+    ticker_names=fileworker.load_setings("ticker_names")
 
+    mt5.login(login,password,server)
+    global top
+    top = tk.Tk()
+    fill_data()
 
-
-# acount and server information    
-login=fileworker.load_setings("login")
-password=fileworker.load_setings("password")
-server=fileworker.load_setings("server")
-ticker_names=fileworker.load_setings("ticker_names")
-
-
-mt5.login(login,password,server)
-
-
-
-
-
-
+    top.geometry("1280x720")
+    top.state('zoomed') #full screen 
+    menu()
+    fill_butons_start()
+    top.mainloop()
 
 
 
@@ -74,12 +78,13 @@ def frame_algo(tmp_buy,index_ticker,tmp_time,plot1):
     cnt_buy =0
     cnt_sell = 0
     len_of_frame=650
+    every_x_remove=3 # odstraní každý 3. prvek 
     size = len(tmp_buy)/len_of_frame
     for q in range(len_of_frame):
         frame_buy.append([])
         frame_buy_info.append([])
         frame_time.append([])
-        for i in range(int(size*(q+1)-size),int(size*(q+1)),10):
+        for i in range(int(size*(q+1)-size),int(size*(q+1)),every_x_remove):
             frame_buy[q].append(tmp_buy[i])
             frame_time[q].append(tmp_time[i])
         #frame_buy_info[q].append(mean(frame_buy[q])) ## mean
@@ -98,6 +103,8 @@ def frame_algo(tmp_buy,index_ticker,tmp_time,plot1):
             
         if cnt_sell==3 and q+1 < len(frame_buy_info):
             algo_test("sell",q,size,index_ticker,frame_buy[q+1][0],plot1)
+            print(len(frame_buy[q]),"L")
+            print(len(frame_buy))
             ##plot1.plot(frame_time[q+1],frame_buy[q+1],color="red")
             
         if cnt_buy==3 and q+1 < len(frame_buy_info):
@@ -115,7 +122,7 @@ def algo_test(state,q,size,index_ticker,value,plot1):
     global minus_cnt 
     global profit_cnt
     if state == "buy":
-        for i in range(start,len(data_buy[index_ticker]),20):
+        for i in range(start,len(data_buy[index_ticker])):
             if value*0.0005+value < data_buy[index_ticker][i]: ## původní 155 159  160 aktualní
                 data_profit.append(data_buy[index_ticker][i]-value) ## profit
                 profit_cnt+=1
@@ -127,7 +134,7 @@ def algo_test(state,q,size,index_ticker,value,plot1):
                 minus_cnt+=1
                 break
     if state == "sell":
-         for i in range(start,len(data_buy[index_ticker]),20):
+         for i in range(start,len(data_buy[index_ticker])):
             if value*0.0005+value < data_buy[index_ticker][i]: ## původní 155 159  160 aktualní
                 data_profit.append(-data_buy[index_ticker][i]+value) ## jsme v mínusu
                 minus_cnt+=1
@@ -215,17 +222,6 @@ def plot(index_ticker):
     toolbar.update()
     # placing the toolbar on the Tkinter window
 
-
-
-
-
-
-top = tk.Tk()
-fill_data()
-
-
-top.geometry("1280x720")
-top.state('zoomed') #full screen 
 
 
 def clear_text(x):
@@ -370,7 +366,6 @@ def menu():
     ## end of menu section
 
 
-menu()
 
 
 
@@ -398,8 +393,10 @@ def fill_butons_start():
             y_axis_tickers+=30
         x+=1
 
-fill_butons_start()
-top.mainloop()
+
+
+
+
 
 
 
