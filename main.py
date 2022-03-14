@@ -1,7 +1,7 @@
 import tkinter as tk
-import lib
-import bot
-#Create an instance of Tkinter frame
+import back_tester_old as lib
+import algorithm as bot
+#Create an instance of Tkinter fram e
 win = tk.Tk()
 #Set the geometry of Tkinter frame
 win.geometry("750x270")
