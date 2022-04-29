@@ -32,6 +32,7 @@ def print_info(indicator):
     print("Options:", indicator.options)
     print("Outputs:", indicator.outputs)
 
+print_info(ti.rsi)
 
 k,y = ti.stoch(high,low,close,4,4,4)
 print(len(k),len(high))

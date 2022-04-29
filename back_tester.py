@@ -25,8 +25,9 @@ import getopt
 import sys
 import tulipy as ti
 import plotly.graph_objects as go
+import plotly.express as px
 from plotly.subplots import make_subplots
-
+from datetime import timedelta, date
 
 data_sell=[]
 data_buy=[]
@@ -61,7 +62,8 @@ class stoch_params():
 class arguments():
     tp: int
     sl: int
-    days: int
+    fr: int
+    to: int
     overlap: int 
     size_frame: int
     tp_list: list 
@@ -71,14 +73,21 @@ class arguments():
 
 
 ar = arguments()
-ar.tp, ar.sl, ar.days, ar.overlap, ar.size_frame, ar.tp_list, ar.sl_list, ar.sl_tp_zip = 70.0, 70.0, 1, 1800, 10800, [], [], True
+ar.tp, ar.sl, ar.to, ar.overlap, ar.size_frame, ar.tp_list, ar.sl_list, ar.sl_tp_zip = 70.0, 70.0, 1, 1800, 10800, [], [], True
 ar.plot = False
 st = stoch_params()
 st.k_period,st.k_slowing_period,st.d_period = 10,30,5
+ar.fr = -1
 
-
-opts, args = getopt.getopt(sys.argv[1:],"t:s:z:f:d:o::p",["tp=","sl=","z","fr=","dy=","ol=","p"])
+opts, args = getopt.getopt(sys.argv[1:],"t:s:z:f:d:o:p:c:",["tp=","sl=","z","fr=","dy=","ol=","p","ch=","plot"])
 for i in opts:  
+    if i[0]+i[1] == "-plot": 
+        ar.plot = True
+    if i[0] == "-c":
+        q=i[1][2:].split(":")
+        st.k_period = int(q[0])
+        st.k_slowing_period = int(q[1])
+        st.d_period = int(q[2])
     if i[0] == "z":
         ar.plot = True
     if i[0] == "-o":
@@ -88,7 +97,12 @@ for i in opts:
     if i[0] == "-f":
         ar.size_frame = int(i[1][2:])
     if i[0] == "-d":
-        ar.days = int(i[1][2:])
+        if ":" in i[1]:
+            q=i[1][2:].split(":")
+            ar.fr = int(q[0])
+            ar.to = int(q[1])
+        else:
+            ar.to = int(i[1][2:])
     if i[0] == "-t":
         if ":" in i[1]:
             q=i[1][2:].split(":")
@@ -167,12 +181,13 @@ def algo_stoch(rate_frame,point):
     high = rate_frame["high"].copy(order='C')
     low = rate_frame["low"].copy(order='C')
     k,y = ti.stoch(high,low,close,st.k_period,st.k_slowing_period,st.d_period)
-    if k > 88 and y > 88:
+    var = ti.var(open, len(rate_frame)-3)
+    if k > 80 and y > k and var[-1] < 0.00001 :
         take_profit = close[-1]-point*float(ar.tp)
         stop_lose = close[-1]+point*float(ar.sl)
         tr = trade(time[-1],open[-1],close[-1],high[-1],low[-1],spread[-1],"sell",take_profit,stop_lose) 
         return tr
-    if  k < 13 and y < 13:
+    if  k < 20 and y < k and var[-1] > 0.00001  :
         take_profit = close[-1]+point*float(ar.tp)
         stop_lose = close[-1]-point*float(ar.sl)
         tr = trade(time[-1],open[-1],close[-1],high[-1],low[-1],spread[-1],"buy",take_profit,stop_lose) 
@@ -191,18 +206,28 @@ class to_plot():
         self.state = state
 
 
-def calc_profit(rate_frame,point):
+def calc_profit(rate_frame,point,symbol):
+    sells = 0 
+    buys = 0
+    profit_trades_local = 0
+    lose_trades_local = 0 
     global profit, profit_trades, lose_trades
     plot_vals = []
     starting_trades = [] 
     low = rate_frame["low"].copy(order='C')
     high = rate_frame["high"].copy(order='C')
-    q,q = ti.stoch(high,high,high,st.k_period,st.k_slowing_period,st.d_period) # used for calculace len of ignoring periods
+    try: 
+        q,q = ti.stoch(high,high,high,st.k_period,st.k_slowing_period,st.d_period) # used for calculace len of ignoring periods
+    except:
+        return
     len_to_slice = len(high)-len(q)+1
     for i in range(len(high)-len_to_slice):
+        trade= algo_stoch(rate_frame[0+i:len_to_slice+i],point)
         for tr,q in zip(starting_trades,range(len(starting_trades))):
             if tr.state == "sell":
                 if tr.take_profit > low[i+len_to_slice]:
+                    sells+=1
+                    profit_trades_local+=1
                     profit_trades+=1
                     profit += (tr.low - tr.take_profit)/point
                     profit -=  tr.spread 
@@ -211,6 +236,8 @@ def calc_profit(rate_frame,point):
                     plot_vals.append(tp)
                     continue
                 if tr.stop_lose < high[i+len_to_slice]:
+                    sells+=1
+                    lose_trades_local+=1
                     lose_trades+=1
                     profit -= (tr.stop_lose - tr.high)/point
                     profit -=  tr.spread
@@ -220,6 +247,8 @@ def calc_profit(rate_frame,point):
                     continue
             if tr.state == "buy":
                 if tr.take_profit < high[i+len_to_slice]:
+                    buys+=1
+                    profit_trades_local+=1
                     profit_trades+=1
                     profit += (tr.take_profit - tr.high)/point
                     profit -=  tr.spread
@@ -228,6 +257,8 @@ def calc_profit(rate_frame,point):
                     plot_vals.append(tp)
                     continue
                 if tr.stop_lose > low[i+len_to_slice]:
+                    buys+=1
+                    lose_trades_local+=1
                     lose_trades+=1
                     profit -= (tr.low - tr.stop_lose)/point
                     profit -=  tr.spread 
@@ -236,30 +267,46 @@ def calc_profit(rate_frame,point):
                     plot_vals.append(tp)
                     continue
 
-        trade= algo_stoch(rate_frame[0+i:len_to_slice+i],point)
         if trade != None:
             starting_trades.append(trade)
-    time_to_show = [datetime.fromtimestamp(t) for t in rate_frame["time"]]
-    fig = make_subplots(rows=2, cols=2,
-                    specs=[[{"secondary_y": True}, {"secondary_y": True}],
-                           [{"secondary_y": True}, {"secondary_y": True}]])
+    if ar.plot == True:
+        time_to_show = [datetime.fromtimestamp(t) for t in rate_frame["time"]]
+        fig = make_subplots(rows=2, cols=2,
+                        specs=[[{"secondary_y": True}, {"secondary_y": True}],
+                            [{"secondary_y": True}, {"secondary_y": True}]])
 
-    fig.add_trace(go.Candlestick(x=time_to_show,
-                open=rate_frame["open"],
-                high=rate_frame["high"],
-                low=rate_frame["low"],
-                close=rate_frame["close"]),
-                row=1, col=2, secondary_y=False,
-                )
-    for i in plot_vals:
-        fig.add_trace(
-        go.Scatter(x=[datetime.fromtimestamp(i.start_time),datetime.fromtimestamp(i.end_time)], y=[i.start_value,i.end_value], name=i.state),
-        row=1, col=2, secondary_y=False,
+        fig.add_trace(go.Candlestick(x=time_to_show,
+                    open=rate_frame["open"],
+                    high=rate_frame["high"],
+                    low=rate_frame["low"],
+                    close=rate_frame["close"]),
+                    row=1, col=2, secondary_y=False,
+                    )
+        for i in plot_vals:
+            fig.add_trace(
+            go.Scatter(x=[datetime.fromtimestamp(i.start_time),datetime.fromtimestamp(i.end_time)], y=[i.start_value,i.end_value], name=i.state),
+            row=1, col=2, secondary_y=False,
+            )
+        fig.update_layout(
+        width=1920,
+        height=1080,
+        margin=dict(l=20, r=20, t=20, b=20),
+        title=symbol,
+        xaxis_title="X Axis Title",
+        yaxis_title="Y Axis Title",
+        legend_title="Legend Title",
+        font=dict(
+            family="Courier New, monospace",
+            size=18,
+            color="RebeccaPurple"
         )
+        )
+        fig.show()
+        print("profit:",profit,"profit_trades:",profit_trades_local,"lose_trades:",lose_trades_local,"buys:",buys,"sells:",sells,symbol)
 
-    fig.show()
-    print(profit,profit_trades,lose_trades)
-    exit()
+    
+    #print(profit,profit_trades,lose_trades)
+    #exit()
 
    
 
@@ -271,18 +318,15 @@ def fill_data():
     now = datetime.now()
     timezone = pytz.timezone("Etc/UTC")
     # create 'datetime' objects in UTC time zone to avoid the implementation of a local time zone offset
-    days=ar.days ## how many days before we want to look
-    
-    if now.month == 1:
-        x = (date(now.year-1, 12, 1) - date(now.year, now.month, 1)).days
-    else:
-        x = (date(now.year, now.month, 1) - date(now.year, now.month-1, 1)).days
-    if days >= now.day:
-        utc_from = datetime(now.year, now.month-1, now.day-days+x, now.hour, now.minute, tzinfo=timezone)
-    else:
-        utc_from = datetime(now.year, now.month, now.day-days, now.hour, now.minute, tzinfo=timezone)
+    days=ar.to ## how many days before we want to look
     
     utc_to = datetime(now.year, now.month, now.day+1, now.hour, now.minute, tzinfo=timezone)
+
+
+
+    utc_from = utc_to - timedelta(days=ar.to)
+    if ar.fr != -1:
+        utc_to = utc_to - timedelta(days=ar.fr)
 
     for i in range(0,len(ticker_names)):
         if ticker_names[i] == "":
@@ -290,14 +334,16 @@ def fill_data():
             break
 
     rates_frame=[]
+    
     for i in ticker_names:
         rates= mt5.copy_rates_range(i,mt5.TIMEFRAME_M5,utc_from,utc_to)
         point=mt5.symbol_info(i).point
-        calc_profit(rates,point)
+    
+        calc_profit(rates,point,i)
         #rates_frame.append( pd.DataFrame(rates))
         #rates_frame[-1]['time']=pd.to_datetime(rates_frame[-1]['time'], unit='s')
     
-    print(len(rates)*len(ticker_names))
+    #print(len(rates)*len(ticker_names))
 
 
 
@@ -370,4 +416,4 @@ def test_suite_main():
 
 test_suite_main()
 
-print(profit,profit_trades,lose_trades)
+print(profit,str(profit_trades/(profit_trades+lose_trades)*100)[:-12]+"%",profit_trades+lose_trades )
