@@ -32,5 +32,4 @@ Složka obsahuje script run_test.py který testuje strategii pro více hodnot st
 
 # Bot
 
-je to hotové ale nechce se mi psát readme 
 
